@@ -4,21 +4,8 @@ from itertools import chain
 from collections import defaultdict, Counter
 from multiprocessing import Pool
 from functools import partial
-# from tqdm.auto import tqdm
 from rake_nltk import Rake
 from collections import defaultdict
-
-__all__ = ['bert_types']
-
-bert_types = [
-    'bert-base-uncased',
-    'bert-large-uncased',
-    'bert-base-cased',
-    'bert-large-cased',
-    'bert-base-multilingual-uncased',
-    'bert-base-multilingual-cased',
-    'bert-base-chinese',
-]
 
 def sent_encode(tokenizer, sent):
     "Encoding as sentence based on the tokenizer"
@@ -212,26 +199,10 @@ def greedy_cos_tf_idf(ref_embedding, ref_embedding_kw, ref_bos_emb, ref_lens, re
     kw_masks = torch.bmm(hyp_kw.unsqueeze(2).float(), ref_kw.unsqueeze(1).float())
 
     masks = masks.float().to(sim_kw.device)
-    # sim = sim * masks  # [bsz*k, ,]
     sim_kw = sim_kw * masks * kw_masks
-
-    # word_precision = sim.max(dim=2)[0] # [bsz*K, ]
-    # word_recall = sim.max(dim=1)[0] # [bsz*K, ]
 
     word_precision_kw = sim_kw.max(dim=2)[0]  # [bsz*K, ]
     word_recall_kw = sim_kw.max(dim=1)[0]  # [bsz*K, ]
-
-    # hyp_idf = hyp_idf.to(word_precision.device)
-    # ref_idf = ref_idf.to(word_recall.device)
-
-    # word_precision *= hyp_idf
-    # word_recall *= ref_idf
-
-    # == mean ==
-    # P = word_precision.sum(dim=1) / hyp_masks.sum(dim=1).type(torch.float32).cuda()
-    # R = word_recall.sum(dim=1) / ref_masks.sum(dim=1).type(torch.float32).cuda()
-    # P_kw = (word_precision * hyp_kw).sum(dim=1) / (1e-5+hyp_kw.sum(dim=1).type(torch.float32).cuda())
-    # R_kw = (word_recall * ref_kw).sum(dim=1) / (1e-5+ref_kw.sum(dim=1).type(torch.float32).cuda())
 
     # == minimal ==
     large1 = torch.full_like(word_precision_kw, 1e5)
@@ -287,11 +258,6 @@ def bert_cos_score_tfidf_batch(model, refs, hyps, tokenizer, kw_layer, tf_dict, 
                                               device=device, mask_head_tail=True)
     hyp_stats_kw = get_bert_embedding_with_kw(hyps, model, tokenizer, kw_layer, tf_dict, kw_extractor,
                                               device=device, mask_head_tail=True)
-    #
-    # ref_stats = get_bert_embedding(refs, model, tokenizer, IDF_DICT,
-    #                                device=device, mask_head_tail=True)
-    # hyp_stats = get_bert_embedding(hyps, model, tokenizer, IDF_DICT,
-    #                                device=device, mask_head_tail=True)
 
     P, R, F1, F_sent, F_kw = greedy_cos_tf_idf(*ref_stats_kw, *hyp_stats_kw, alpha, beta)
     preds.append(torch.stack((P, R, F1), dim=1))

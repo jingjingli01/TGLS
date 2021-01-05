@@ -11,7 +11,6 @@ from .utils_sent_min_kw_min import padding, collate_tf_no_tokenize, merge_sub_to
 
 
 def expand_times(arr, times):
-    ''' expand arr[i] by times[i]'''
     arr_expand = []
     for a, t in zip(arr, times):
         arr_expand += [a] * t
@@ -302,7 +301,7 @@ class SASearcher():
         score, _ ,_ = self.simulator.eval(cands, cands_idx, orgs=orgs)
         return score.unsqueeze(dim=0)
 
-    def rollout(self, case_pos=None, orgs=None,keywords=None, sub_dicts=None):
+    def run(self, case_pos=None, orgs=None,keywords=None, sub_dicts=None):
 
         if all([len(x) == 0 for x in keywords]): self.do_copy = False
 
@@ -328,17 +327,6 @@ class SASearcher():
             ins_cands, ins_score, ins_2d_score, ins_sim_tuple = self.cal_ins_score(bert_inp,
                                  kw_inps=None,kw_cands_idx=None, verbose=False, keywords=keywords)
 
-        # re_ins_cands = [None] * bsz
-        # re_2d_score = [None] * bsz
-        # for i in range(bsz):
-        #     re_ins_cands[i] = [ins_cands[k] for k in range(i, bsz * self.K, bsz)]
-        #     re_2d_score[i] = [ins_2d_score[k] for k in range(i, bsz * self.K, bsz)]
-        # for item in re_ins_cands:
-        #     item.extend(ins_cands[bsz * self.K:])
-        # ins_score_l = ins_score.tolist()
-        # combined = [list(zip(re_ins_cands[id], ins_score_l[id], re_2d_score[id])) for id in range(bsz)]
-
-        # for substitute
         bert_inp = self.create_sub_inps(orgs, sub_pos)
         sub_cands, sub_score, sub_2d_score, sub_sim_tuple = self.cal_ins_score(bert_inp,
                                                                                kw_inps=None, kw_cands_idx=None,
